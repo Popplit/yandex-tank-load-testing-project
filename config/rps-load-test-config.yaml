@@ -1,0 +1,25 @@
+pools:
+  - id: HTTP pool
+    gun:
+      type: http/scenario
+      target: api:8080
+      answlog:
+        enabled: true
+        path: ./answ.log
+        filter: all
+
+    ammo:
+      type: http/scenario
+      file: ./ammos/ammo.yaml
+
+    result:
+      type: phout
+      destination: ./phout.log
+
+    rps:
+      - {type: step, from: 1, to: 50, step: 25, duration: 5s}
+      - {type: const, ops: 50, duration: 10m}
+
+    startup:
+      type: once
+      times: 50000

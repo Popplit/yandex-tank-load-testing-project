@@ -1,0 +1,25 @@
+phantom:
+  enabled: false
+
+pandora:
+  package: yandextank.plugins.Pandora
+  enabled: true
+  pandora_cmd: pandora
+  config_file: config/pandora_config.yaml
+
+overload:
+  enabled: true
+  token_file: config/token.txt
+  job_name: API load test practice
+  job_dsc: Yandex Tank + Pandora load testing practice
+
+telegraf:
+  enabled: false
+
+autostop:
+  enabled: true
+  package: yandextank.plugins.Autostop
+  autostop:
+  - quantile(50, 30s, 30s)
+  - net(xxx, 50%, 30s)
+  - http(5xx, 50%, 30s)

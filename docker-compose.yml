@@ -1,0 +1,42 @@
+version: '3.9'
+services:
+  yandex-tank:
+    build: .
+    volumes:
+      - type: bind
+        source: ./config
+        target: /app/config
+      - type: bind
+        source: ./ammos
+        target: /app/ammos
+    depends_on:
+      api:
+        condition: service_healthy
+
+  api:
+    build: 
+      context: ./api-service
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://api:8080/questions?page=0&size=2&sort=createdAt,desc" ]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+    depends_on:
+      postgre:
+        condition: service_healthy
+
+  postgre:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: postgres_demo
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
