@@ -1,24 +1,86 @@
-pools:
-  - id: HTTP pool
-    gun:
-      type: http/scenario
-      target: api:8080
-      answlog:
-        enabled: true
-        path: ./answ.log
-        filter: all
+variable_sources:
+  - type: "file/json"
+    name: "questions"
+    file: "ammos/questions.json"
+  - type: "file/json"
+    name: "answers"
+    file: "ammos/answers.json"
 
-    ammo:
-      type: http/scenario
-      file: ./ammos/ammo.yaml
+requests:
+  - name: "create_question"
+    uri: '/questions'
+    method: POST
+    tag: create question
+    headers:
+      Content-Type: "application/json"
+    preprocessor:
+      mapping:
+        title: source.questions.data[rand].title
+        description: source.questions.data[rand].description
+    postprocessors:
+      - type: var/jsonpath
+        mapping:
+          created_id: $.id
+    body: '{
+        "title": "{{.request.create_question.preprocessor.title}}",
+        "description": "{{.request.create_question.preprocessor.description}}"
+    }'
 
-    result:
-      type: phout
-      destination: ./phout.log
+  - name: "create_answer"
+    uri: '/questions/{{.request.create_question.postprocessor.created_id}}/answers'
+    method: POST
+    tag: create answer
+    headers:
+      Content-Type: "application/json"
+    preprocessor:
+      mapping:
+        text: source.answers.data[rand].text
+    body: '{
+          "text": "{{.request.create_answer.preprocessor.text}}"
+      }'
 
-    instance:
-      type: step
-      from: 1
-      to: 1000
-      step: 100
-      duration: 5s
+  - name: "create_answer_specific_question"
+    uri: '/questions/1000/answers'
+    method: POST
+    tag: create answer on question with id 1000
+    headers:
+      Content-Type: "application/json"
+    preprocessor:
+      mapping:
+        text: source.answers.data[rand].text
+    body: '{
+          "text": "{{.request.create_answer.preprocessor.text}}"
+      }'
+
+  - name: "get_answers"
+    uri: '/questions/{{.request.create_question.postprocessor.created_id}}/answers'
+    method: GET
+    tag: get answers
+
+  - name: "get_answers_specific_question"
+    uri: '/questions/1000/answers'
+    method: GET
+    tag: get answers on question with id 1000
+
+  - name: "get_questions"
+    uri: '/questions'
+    method: GET
+    tag: get questions
+
+scenarios:
+  - name: PostQuestionAndCheckForAnswers
+    weight: 1
+    min_waiting_time: 1000
+    requests: [
+      "create_question",
+      "get_answers(5)"
+    ]
+
+  - name: PostAnswerForSpecificQuestion
+    weight: 1
+    min_waiting_time: 1000
+    requests: [
+      "get_questions",
+      "get_answers_specific_question",
+      "create_answer_specific_question"
+    ]
